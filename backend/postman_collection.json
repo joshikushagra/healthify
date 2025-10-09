@@ -1,0 +1,498 @@
+{
+  "info": {
+    "name": "Healthify Backend API",
+    "description": "Complete API collection for Healthify medical AI platform",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refresh_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "session_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"testpassword123\",\n  \"first_name\": \"Test\",\n  \"last_name\": \"User\",\n  \"role\": \"patient\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Login User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('access_token', response.access_token);",
+                  "    pm.collectionVariables.set('refresh_token', response.refresh_token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"testpassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Get Current User",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/me",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "me"]
+            }
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/refresh",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "refresh"]
+            }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/logout",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "logout"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Chat & AI",
+      "item": [
+        {
+          "name": "Analyze Symptoms",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"symptoms\": [\"headache\", \"fever\", \"cough\"],\n  \"age\": 30,\n  \"gender\": \"male\",\n  \"medical_history\": [\"diabetes\"],\n  \"current_medications\": [\"metformin\"],\n  \"additional_info\": \"Symptoms started 2 days ago\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/chat/symptom",
+              "host": ["{{base_url}}"],
+              "path": ["chat", "symptom"]
+            }
+          }
+        },
+        {
+          "name": "Create Chat Session",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('session_id', response.session_id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/chat/session",
+              "host": ["{{base_url}}"],
+              "path": ["chat", "session"]
+            }
+          }
+        },
+        {
+          "name": "Get Chat Sessions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/chat/sessions",
+              "host": ["{{base_url}}"],
+              "path": ["chat", "sessions"]
+            }
+          }
+        },
+        {
+          "name": "Send Message",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Hello, I have a headache and feel dizzy\",\n  \"message_type\": \"user\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/chat/sessions/{{session_id}}/messages",
+              "host": ["{{base_url}}"],
+              "path": ["chat", "sessions", "{{session_id}}", "messages"]
+            }
+          }
+        },
+        {
+          "name": "End Chat Session",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/chat/sessions/{{session_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["chat", "sessions", "{{session_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Patient Management",
+      "item": [
+        {
+          "name": "Create Patient Profile",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"blood_type\": \"O+\",\n  \"height\": 175,\n  \"weight\": 70,\n  \"emergency_contact_name\": \"John Doe\",\n  \"emergency_contact_phone\": \"+1234567890\",\n  \"insurance_provider\": \"Blue Cross\",\n  \"insurance_number\": \"BC123456789\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/patients/",
+              "host": ["{{base_url}}"],
+              "path": ["patients", ""]
+            }
+          }
+        },
+        {
+          "name": "Get My Patient Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/patients/me",
+              "host": ["{{base_url}}"],
+              "path": ["patients", "me"]
+            }
+          }
+        },
+        {
+          "name": "Add Medical History",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"condition\": \"Diabetes Type 2\",\n  \"status\": \"active\",\n  \"notes\": \"Well controlled with medication\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/patients/me/medical-history",
+              "host": ["{{base_url}}"],
+              "path": ["patients", "me", "medical-history"]
+            }
+          }
+        },
+        {
+          "name": "Get Medical History",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/patients/me/medical-history",
+              "host": ["{{base_url}}"],
+              "path": ["patients", "me", "medical-history"]
+            }
+          }
+        },
+        {
+          "name": "Add Allergy",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"allergen\": \"Penicillin\",\n  \"severity\": \"severe\",\n  \"reaction\": \"Anaphylaxis\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/patients/me/allergies",
+              "host": ["{{base_url}}"],
+              "path": ["patients", "me", "allergies"]
+            }
+          }
+        },
+        {
+          "name": "Get Allergies",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/patients/me/allergies",
+              "host": ["{{base_url}}"],
+              "path": ["patients", "me", "allergies"]
+            }
+          }
+        },
+        {
+          "name": "Add Medication",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Metformin\",\n  \"dosage\": \"500mg\",\n  \"frequency\": \"Twice daily\",\n  \"is_active\": true,\n  \"prescribed_by\": \"Dr. Smith\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/patients/me/medications",
+              "host": ["{{base_url}}"],
+              "path": ["patients", "me", "medications"]
+            }
+          }
+        },
+        {
+          "name": "Get Medications",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/patients/me/medications",
+              "host": ["{{base_url}}"],
+              "path": ["patients", "me", "medications"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Content Management",
+      "item": [
+        {
+          "name": "Get Services",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/content/services",
+              "host": ["{{base_url}}"],
+              "path": ["content", "services"]
+            }
+          }
+        },
+        {
+          "name": "Create Service (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"General Consultation\",\n  \"description\": \"Comprehensive health consultation with our medical professionals\",\n  \"icon\": \"stethoscope\",\n  \"price\": \"$150\",\n  \"duration\": \"30 minutes\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/content/services",
+              "host": ["{{base_url}}"],
+              "path": ["content", "services"]
+            }
+          }
+        },
+        {
+          "name": "Get FAQs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/content/faq",
+              "host": ["{{base_url}}"],
+              "path": ["content", "faq"]
+            }
+          }
+        },
+        {
+          "name": "Get FAQs by Category",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/content/faq?category=general",
+              "host": ["{{base_url}}"],
+              "path": ["content", "faq"],
+              "query": [
+                {
+                  "key": "category",
+                  "value": "general"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create FAQ (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"question\": \"How do I book an appointment?\",\n  \"answer\": \"You can book an appointment through our online portal or by calling our office.\",\n  \"category\": \"general\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/content/faq",
+              "host": ["{{base_url}}"],
+              "path": ["content", "faq"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "System",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            }
+          }
+        },
+        {
+          "name": "Root Endpoint",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": ["{{base_url}}"],
+              "path": [""]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
