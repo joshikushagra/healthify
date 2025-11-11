@@ -1,5 +1,5 @@
 import { openai } from "@ai-sdk/openai"
-import { convertToModelMessages, streamText, type UIMessage } from "ai"
+import { convertToModelMessages, streamText, type UIMessage, type CoreMessage } from "ai"
 
 export const runtime = "edge"
 
@@ -9,7 +9,9 @@ export async function POST(req: Request) {
   try {
     const { messages }: { messages: UIMessage[] } = await req.json()
 
-    const prompt = convertToModelMessages([
+    const converted: CoreMessage[] = convertToModelMessages(messages)
+
+    const prompt: CoreMessage[] = [
       {
         role: "system",
         content: `You are a medical AI assistant designed to help healthcare professionals and patients with medical information. 
@@ -32,24 +34,17 @@ You can help with:
 
 Always maintain a professional, caring, and informative tone.`,
       },
-      ...messages,
-    ])
+      ...converted,
+    ]
 
     const result = streamText({
-      model: openai("gpt-4"),
+      model: openai("gpt-4o-mini"),
       messages: prompt,
-      maxTokens: 1000,
       temperature: 0.7,
       abortSignal: req.signal,
     })
 
-    return result.toDataStreamResponse({
-      onFinish: async ({ isAborted }) => {
-        if (isAborted) {
-          console.log("Medical AI chat aborted")
-        }
-      },
-    })
+    return result.toTextStreamResponse()
   } catch (error) {
     console.error("Chat API error:", error)
     return new Response(JSON.stringify({ error: "Failed to process chat request" }), {
