@@ -49,6 +49,7 @@ out/
 .vercel
 .env*.local
 
+<<<<<<< HEAD
 # Database
 *.db
 *.sqlite3
@@ -67,3 +68,8 @@ logs/
 .env.development.local
 .env.test.local
 .env.production.local
+=======
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+>>>>>>> d3f7d0c (sync main changes to healthify project)
