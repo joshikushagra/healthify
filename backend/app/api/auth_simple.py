@@ -1,12 +1,31 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request
-from app.database import get_async_mongo_collection
-from app.schemas.user_simple import UserCreate, UserLogin, UserResponse, Token
-from app.utils.auth_simple import verify_password, get_password_hash, create_tokens, verify_token
-from app.utils.rate_limiter import rate_limiter
 from datetime import datetime
 import uuid
 
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+
+from app.database import get_async_mongo_collection
+from app.schemas.user_simple import Token, UserCreate, UserLogin, UserResponse
+from app.utils.auth_simple import (create_tokens, get_password_hash,
+                                   verify_password, verify_token)
+
 router = APIRouter(prefix="/auth", tags=["authentication"])
+
+
+def _serialize_user(user_doc: dict) -> UserResponse:
+    """Convert a Mongo document into a UserResponse."""
+    return UserResponse(
+        id=str(user_doc["_id"]),
+        email=user_doc["email"],
+        username=user_doc.get("username", ""),
+        first_name=user_doc.get("first_name"),
+        last_name=user_doc.get("last_name"),
+        phone_number=user_doc.get("phone_number"),
+        user_type=user_doc.get("user_type"),
+        is_active=user_doc.get("is_active", True),
+        is_verified=user_doc.get("is_verified", False),
+        created_at=user_doc.get("created_at", datetime.utcnow()),
+        updated_at=user_doc.get("updated_at"),
+    )
 
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
@@ -16,50 +35,41 @@ async def register(
 ):
     """Register a new user."""
     try:
-        # Get users collection
         users_collection = get_async_mongo_collection("users")
-        
-        # Check if user already exists
+
         existing_user = await users_collection.find_one({"email": user_data.email})
         if existing_user:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Email already registered"
             )
-            
-        # Get device info
-        device_info = {
-            "ip": request.client.host,
-            "user_agent": request.headers.get("user-agent"),
-            "platform": request.headers.get("sec-ch-ua-platform"),
-        }
-        
-        # Create new user
+
         user_id = str(uuid.uuid4())
         hashed_password = get_password_hash(user_data.password)
-        
+        timestamp = datetime.utcnow()
+
         user_doc = {
             "_id": user_id,
             "email": user_data.email,
             "username": user_data.username,
             "hashed_password": hashed_password,
+            "first_name": user_data.first_name,
+            "last_name": user_data.last_name,
+            "phone_number": user_data.phone_number,
+            "user_type": user_data.user_type,
             "is_active": True,
             "is_verified": False,
-            "created_at": datetime.utcnow(),
-            "updated_at": datetime.utcnow()
+            "created_at": timestamp,
+            "updated_at": timestamp,
+            "last_login": None,
+            "registered_ip": request.client.host if request.client else None,
+            "user_agent": request.headers.get("user-agent"),
         }
-        
+
         await users_collection.insert_one(user_doc)
-        
-        return UserResponse(
-            id=user_id,
-            email=user_data.email,
-            username=user_data.username,
-            is_active=True,
-            is_verified=False,
-            created_at=user_doc["created_at"]
-        )
-        
+
+        return _serialize_user(user_doc)
+
     except HTTPException:
         raise
     except Exception as e:
@@ -192,3 +202,18 @@ async def get_current_user_info(
         is_verified=True,
         created_at=datetime.utcnow()
     )
+
+
+@router.get("/users/{user_id}", response_model=UserResponse)
+async def get_user_by_id(user_id: str):
+    """Fetch a user's profile from MongoDB."""
+    users_collection = get_async_mongo_collection("users")
+    user = await users_collection.find_one({"_id": user_id})
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+
+    return _serialize_user(user)
